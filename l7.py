@@ -18,7 +18,7 @@ for n,args in enumerate(sys.argv):
     if args=="-path":
         path = str(sys.argv[n+1])
     if args=="-th":
-        threads = str(sys.argv[n+1])
+        threads = int(sys.argv[n+1])
 
 Choice = random.choice
 Intn = random.randint
