@@ -92,7 +92,7 @@ func getheader() string {
 	accept := acceptall[rand.Intn(len(acceptall))]
 	referer := "Referer: " + "https://" + ip + "/" + "\r\n"
 	useragent := "User-Agent: " + getuseragent() + "\r\n"
-	header := connection + useragent + accept + referer + "\r\n"
+	header := useragent + connection + accept + referer + "\r\n"
 	return header
 }
 
