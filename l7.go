@@ -16,9 +16,6 @@ import (
 
 // Global state for DNS IPs
 var (
-	ips      []string
-	ipsMutex sync.Mutex
-
 	httpMethods  = []string{"GET", "GET", "GET", "POST", "HEAD"}
 	languages    = []string{"en-US,en;q=0.9", "en-GB,en;q=0.8", "fr-FR,fr;q=0.9"}
 	contentTypes = []string{"application/x-www-form-urlencoded", "application/json", "text/plain"}
@@ -70,19 +67,6 @@ func main() {
 		Port:       port,
 		Path:       path,
 	}
-
-	// Initial DNS
-	addrs, err := lookupIPv4(parsed.Hostname())
-	if err != nil {
-		fmt.Printf("DNS lookup failed: %v\n", err)
-		os.Exit(1)
-	}
-	updateIPs(addrs)
-	fmt.Printf("Resolved IPs: %v\n", addrs)
-
-	// Periodic DNS refresh
-	go dnsRefresh(parsed.Hostname(), 30*time.Second)
-
 	fmt.Printf("Starting stress test: %s via %s, threads=%d, duration=%v\n",
 		rawURL, path, threads, cfg.Duration)
 	runWorkers(cfg)
@@ -102,61 +86,10 @@ func determinePort(u *url.URL) int {
 	return 80
 }
 
-// lookupIPv4 resolves A records to IPv4 strings
-func lookupIPv4(host string) ([]string, error) {
-	addrs, err := net.LookupIP(host)
-	if err != nil {
-		return nil, err
-	}
-	var out []string
-	for _, a := range addrs {
-		if ip4 := a.To4(); ip4 != nil {
-			out = append(out, ip4.String())
-		}
-	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("no IPv4 for %s", host)
-	}
-	return out, nil
-}
-
-// dnsRefresh periodically re-resolves DNS entries
-func dnsRefresh(host string, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for range ticker.C {
-		if addrs, err := lookupIPv4(host); err == nil {
-			updateIPs(addrs)
-			fmt.Printf("Re-resolved IPs: %v\n", addrs)
-		} else {
-			fmt.Printf("DNS refresh error: %v\n", err)
-		}
-	}
-}
-
-// updateIPs safely replaces global IP list
-func updateIPs(newList []string) {
-	ipsMutex.Lock()
-	ips = newList
-	ipsMutex.Unlock()
-}
-
-// pickRandomIP returns one IP from the pool
-func pickRandomIP() string {
-	ipsMutex.Lock()
-	defer ipsMutex.Unlock()
-	return ips[rand.Intn(len(ips))]
-}
-
 // runWorkers spawns threads to send bursts until duration elapses
 func runWorkers(cfg StressConfig) {
 	var wg sync.WaitGroup
 	stopCh := time.After(cfg.Duration)
-	hostHdr := cfg.Target.Hostname()
-	if cfg.CustomHost != "" {
-		hostHdr = cfg.CustomHost
-	}
-
 	for i := 0; i < cfg.Threads; i++ {
 		wg.Add(1)
 		go func(id int) {
@@ -165,7 +98,7 @@ func runWorkers(cfg StressConfig) {
 			defer ticker.Stop()
 
 			tlsCfg := &tls.Config{
-				ServerName:         hostHdr,
+				ServerName:         cfg.Target.Hostname(),
 				InsecureSkipVerify: true,
 			}
 
@@ -182,11 +115,9 @@ func runWorkers(cfg StressConfig) {
 	wg.Wait()
 }
 
-// sendBurst opens a connection and sends ~500 requests back-to-back
+// sendBurst opens a connection and sends requests back-to-back
 func sendBurst(cfg StressConfig, tlsCfg *tls.Config) {
-	ipAddr := pickRandomIP()
-	address := fmt.Sprintf("%s:%d", ipAddr, cfg.Port)
-
+	address := fmt.Sprintf("%s:%d", cfg.Target.Hostname(), cfg.Port)
 	conn, err := dialConn(address, tlsCfg)
 	if err != nil {
 		fmt.Printf("[dial error] %v\n", err)
@@ -194,11 +125,9 @@ func sendBurst(cfg StressConfig, tlsCfg *tls.Config) {
 	}
 	defer conn.Close()
 
-	method := httpMethods[rand.Intn(len(httpMethods))]
-	header, body := buildRequest(cfg, method)
-
 	for i := 0; i < 180; i++ {
-
+		method := httpMethods[rand.Intn(len(httpMethods))]
+		header, body := buildRequest(cfg, method)
 		// batch header+body into one writev call:
 		var bufs net.Buffers
 		bufs = append(bufs, []byte(header))
