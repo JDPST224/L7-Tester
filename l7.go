@@ -145,8 +145,6 @@ func sendBurst(ctx context.Context, cfg StressConfig, tlsCfg *tls.Config) {
 	defer conn.Close()
 
 	for i := 0; i < 180; i++ {
-		// set a write deadline so we don't hang indefinitely
-		_ = conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
 		req := buildRequest(cfg)
 		if _, err := conn.Write(req); err != nil {
 			fmt.Printf("[write error] %v\n", err)
@@ -157,7 +155,7 @@ func sendBurst(ctx context.Context, cfg StressConfig, tlsCfg *tls.Config) {
 
 // dialConn chooses TCP or TLS based on port and applies timeouts
 func dialConn(ctx context.Context, addr string, tlsCfg *tls.Config) (net.Conn, error) {
-	dialer := &net.Dialer{Timeout: 5 * time.Second}
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
 	if tlsCfg != nil && strings.HasSuffix(addr, ":443") {
 		rawConn, err := dialer.DialContext(ctx, "tcp", addr)
 		if err != nil {
