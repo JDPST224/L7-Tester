@@ -100,7 +100,6 @@ func determinePort(u *url.URL) int {
 // runWorkers spawns goroutines to send request bursts until timeout
 func runWorkers(cfg StressConfig) {
 	var wg sync.WaitGroup
-	// use context so we can pass it into DialContext
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Duration)
 	defer cancel()
 
@@ -144,6 +143,9 @@ func sendBurst(ctx context.Context, cfg StressConfig, tlsCfg *tls.Config) {
 	}
 	defer conn.Close()
 
+	// ensure we don't block forever if the server stops reading
+	conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+
 	for i := 0; i < 180; i++ {
 		req := buildRequest(cfg)
 		if _, err := conn.Write(req); err != nil {
@@ -161,8 +163,13 @@ func dialConn(ctx context.Context, addr string, tlsCfg *tls.Config) (net.Conn, e
 		if err != nil {
 			return nil, err
 		}
-		// wrap in TLS
-		return tls.Client(rawConn, tlsCfg), nil
+		// wrap in TLS and handshake immediately
+		tlsConn := tls.Client(rawConn, tlsCfg)
+		if err := tlsConn.Handshake(); err != nil {
+			rawConn.Close()
+			return nil, err
+		}
+		return tlsConn, nil
 	}
 	return dialer.DialContext(ctx, "tcp", addr)
 }
@@ -182,9 +189,9 @@ func buildRequest(cfg StressConfig) []byte {
 		hostHdr = cfg.CustomHost
 	}
 
-	// Request line + Host header
+	// Request line + Host header (no explicit port)
 	buf.WriteString("GET " + cfg.Path + " HTTP/1.1\r\n")
-	buf.WriteString("Host: " + hostHdr + ":" + strconv.Itoa(cfg.Port) + "\r\n")
+	buf.WriteString("Host: " + hostHdr + "\r\n")
 
 	// Common headers
 	writeCommonHeaders(buf)
