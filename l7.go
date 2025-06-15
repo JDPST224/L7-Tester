@@ -103,22 +103,24 @@ func runWorkers(cfg StressConfig) {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Duration)
 	defer cancel()
 
+	// Create a single shared TLS config to reuse across connections
+	serverName := cfg.Target.Hostname()
+	if cfg.CustomHost != "" {
+		serverName = cfg.CustomHost
+	}
+	tlsCfg := &tls.Config{
+		ServerName:         serverName,
+		InsecureSkipVerify: true,
+		// To enable TLS session reuse, uncomment the line below:
+		// ClientSessionCache: tls.NewLRUClientSessionCache(128),
+	}
+
 	for i := 0; i < cfg.Threads; i++ {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
 			ticker := time.NewTicker(60 * time.Millisecond)
 			defer ticker.Stop()
-
-			// Use custom-host for SNI if provided
-			serverName := cfg.Target.Hostname()
-			if cfg.CustomHost != "" {
-				serverName = cfg.CustomHost
-			}
-			tlsCfg := &tls.Config{
-				ServerName:         serverName,
-				InsecureSkipVerify: true,
-			}
 
 			for {
 				select {
@@ -143,15 +145,20 @@ func sendBurst(ctx context.Context, cfg StressConfig, tlsCfg *tls.Config) {
 	}
 	defer conn.Close()
 
-	// ensure we don't block forever if the server stops reading
-	conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
-
+	// send a burst of requests
 	for i := 0; i < 180; i++ {
+		if err := conn.SetWriteDeadline(time.Now().Add(2 * time.Second)); err != nil {
+      return
+    }
 		req := buildRequest(cfg)
 		if _, err := conn.Write(req); err != nil {
 			fmt.Printf("[write error] %v\n", err)
 			return
 		}
+		// Drain some of the response to avoid buildup
+		tmp := make([]byte, 4096)
+		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+		conn.Read(tmp) // ignore output
 	}
 }
 
